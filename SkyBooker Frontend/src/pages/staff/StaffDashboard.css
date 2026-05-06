@@ -1,0 +1,45 @@
+.dash-header { margin-bottom: 32px; }
+.dash-header h1 { font-size: 28px; margin-bottom: 4px; letter-spacing: -0.5px; }
+.dash-header p  { color: var(--gray-500); font-size: 15px; }
+
+.dash-tabs {
+  display: flex; gap: 4px; background: var(--white);
+  border: 1px solid var(--gray-100); border-radius: var(--r-xl);
+  padding: 6px; margin-bottom: 28px; box-shadow: var(--shadow-sm);
+  width: fit-content; flex-wrap: wrap;
+}
+.dash-tab {
+  padding: 10px 22px; border-radius: var(--r-lg);
+  font-size: 14px; font-weight: 600; color: var(--gray-500);
+  background: transparent; transition: all var(--t); white-space: nowrap;
+}
+.dash-tab.active { background: var(--blue); color: #fff; box-shadow: var(--shadow-blue); }
+.dash-tab:hover:not(.active) { background: var(--gray-100); color: var(--text); }
+
+.flights-table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.data-table th {
+  background: var(--gray-50); padding: 12px 16px;
+  text-align: left; font-size: 11px; font-weight: 700;
+  color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.07em;
+  border-bottom: 1px solid var(--gray-100); white-space: nowrap;
+}
+.data-table td { padding: 14px 16px; border-bottom: 1px solid var(--gray-100); color: var(--text); }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--gray-50); }
+.data-table td strong { font-weight: 700; }
+.route-arrow { color: var(--blue); margin: 0 4px; }
+.time-small { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+.seats-low  { color: var(--rose); font-weight: 700; }
+.seats-ok   { color: var(--emerald); font-weight: 700; }
+
+.form-section h2 { font-size: 20px; margin-bottom: 24px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.field-hint { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+.checkboxes { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+.checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.checkbox-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--blue); cursor: pointer; }
+
+.empty-table { text-align: center; padding: 60px; color: var(--gray-400); font-size: 15px; }
