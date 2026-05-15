@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Gateway - all requests go through here
-const GATEWAY_URL = 'http://localhost:8080';
+const GATEWAY_URL = process.env.REACT_APP_GATEWAY_URL || 'http://localhost:8080';
 
 function authHeader() {
   const token = localStorage.getItem('token');
@@ -133,4 +133,23 @@ export const airlineApi = {
 
   addAirport: (data) =>
     axios.post(`${GATEWAY_URL}/airports`, data, { headers: authHeader() }),
+};
+
+// ==================== PROMO CODES (→ 8085 via /payments/promo) ====================
+export const promoApi = {
+  // Admin: create a new promo code
+  create: (data) =>
+    axios.post(`${GATEWAY_URL}/payments/promo`, data, { headers: authHeader() }),
+
+  // Admin: get all promo codes
+  getAll: () =>
+    axios.get(`${GATEWAY_URL}/payments/promo`, { headers: authHeader() }),
+
+  // Admin: toggle active/inactive
+  toggle: (id) =>
+    axios.put(`${GATEWAY_URL}/payments/promo/${id}/toggle`, null, { headers: authHeader() }),
+
+  // Passenger: validate promo code and calculate discount
+  apply: (code, orderAmount) =>
+    axios.post(`${GATEWAY_URL}/payments/promo/apply`, { code, orderAmount }, { headers: authHeader() }),
 };
