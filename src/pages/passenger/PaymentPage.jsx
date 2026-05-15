@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { paymentApi } from '../../api/api';
+import { paymentApi, promoApi } from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import './PaymentPage.css';
 
@@ -11,10 +11,6 @@ const METHODS = [
   { value: 'WALLET',     label: 'Wallet',               desc: 'Paytm, MobiKwik & more',           icon: '👛', bg: '#fdf2f8' },
 ];
 
-/**
- * Dynamically loads the Razorpay Checkout script from their CDN.
- * Returns a Promise that resolves when the script is ready.
- */
 function loadRazorpayScript() {
   return new Promise((resolve) => {
     if (window.Razorpay) { resolve(true); return; }
@@ -32,16 +28,26 @@ export default function PaymentPage() {
   const navigate          = useNavigate();
   const { userEmail }     = useAuth();
 
-  const amount = parseFloat(searchParams.get('amount') || 4500);
-  const taxes  = Math.round(amount * 0.18);
-  const total  = amount + taxes;
+  const baseFare = parseFloat(searchParams.get('amount') || 4500);
+  const taxes    = Math.round(baseFare * 0.18);
+  const baseTotal = baseFare + taxes;   // total before promo
 
-  const [mode,    setMode]    = useState('UPI');
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
-  const [rzpReady, setRzpReady] = useState(false);
+  const [mode,       setMode]       = useState('UPI');
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState('');
+  const [rzpReady,   setRzpReady]   = useState(false);
 
-  // Pre-load Razorpay script as soon as the page mounts
+  // Promo code state
+  const [promoInput,    setPromoInput]    = useState('');
+  const [promoLoading,  setPromoLoading]  = useState(false);
+  const [promoResult,   setPromoResult]   = useState(null);  // PromoApplyResponse | null
+  const [promoError,    setPromoError]    = useState('');
+  const promoDebounce = useRef(null);
+
+  // Final amount after discount
+  const discountAmt = promoResult?.valid ? promoResult.discountAmount : 0;
+  const finalTotal  = promoResult?.valid ? promoResult.finalAmount    : baseTotal;
+
   useEffect(() => {
     loadRazorpayScript().then((ok) => {
       if (!ok) setError('Could not load Razorpay. Check your internet connection.');
@@ -49,44 +55,79 @@ export default function PaymentPage() {
     });
   }, []);
 
+  // Auto-validate promo code with 600ms debounce
+  useEffect(() => {
+    if (!promoInput.trim()) {
+      setPromoResult(null);
+      setPromoError('');
+      return;
+    }
+    clearTimeout(promoDebounce.current);
+    promoDebounce.current = setTimeout(() => {
+      validatePromo(promoInput.trim());
+    }, 600);
+    return () => clearTimeout(promoDebounce.current);
+  }, [promoInput]);
+
+  async function validatePromo(code) {
+    setPromoLoading(true);
+    setPromoError('');
+    setPromoResult(null);
+    try {
+      const res = await promoApi.apply(code, baseTotal);
+      setPromoResult(res.data);
+      if (!res.data.valid) setPromoError(res.data.message);
+    } catch {
+      setPromoError('Could not validate promo code. Please try again.');
+    } finally {
+      setPromoLoading(false);
+    }
+  }
+
+  function clearPromo() {
+    setPromoInput('');
+    setPromoResult(null);
+    setPromoError('');
+  }
+
   async function handlePay() {
     if (!rzpReady) { setError('Razorpay is not ready yet. Please wait a moment.'); return; }
     setLoading(true);
     setError('');
 
     try {
-      // ── Step 1: Create Razorpay order on backend ───────────────────────────
+      // Step 1: Create Razorpay order with the final (post-discount) amount
       const orderRes = await paymentApi.createRazorpayOrder({
         bookingId: parseInt(bookingId),
         userEmail,
-        amount:   total,   // total including taxes
+        amount:   finalTotal,
         currency: 'INR',
       });
 
       const { razorpayOrderId, keyId, amountInPaise, currency } = orderRes.data;
 
-      // ── Step 2: Open Razorpay Checkout modal ───────────────────────────────
+      // Step 2: Open Razorpay Checkout modal
       const options = {
-        key:      keyId,
-        amount:   amountInPaise,
-        currency: currency,
-        name:     'SkyBooker',
+        key:         keyId,
+        amount:      amountInPaise,
+        currency:    currency,
+        name:        'SkyBooker',
         description: `Flight Booking #${bookingId}`,
-        image:    'https://cdn-icons-png.flaticon.com/512/3125/3125713.png',
-        order_id: razorpayOrderId,
+        image:       'https://cdn-icons-png.flaticon.com/512/3125/3125713.png',
+        order_id:    razorpayOrderId,
 
-        // Called by Razorpay after user completes payment
         handler: async function (rzpResponse) {
           try {
-            // ── Step 3: Verify signature on backend ─────────────────────────
+            // Step 3: Verify + send promoCode so backend can increment usage
             const verifyRes = await paymentApi.verifyPayment({
               razorpayOrderId:   rzpResponse.razorpay_order_id,
               razorpayPaymentId: rzpResponse.razorpay_payment_id,
               razorpaySignature: rzpResponse.razorpay_signature,
               bookingId:         parseInt(bookingId),
               userEmail,
-              amount:            total,
+              amount:            finalTotal,
               paymentMode:       mode,
+              promoCode:         promoResult?.valid ? promoResult.code : null,
             });
 
             if (verifyRes.data?.status === 'PAID') {
@@ -101,18 +142,9 @@ export default function PaymentPage() {
           }
         },
 
-        prefill: {
-          email: userEmail,
-          // name and contact can be added from user profile if available
-        },
-
-        notes: {
-          bookingId,
-          userEmail,
-        },
-
-        theme: { color: '#2563eb' },
-
+        prefill: { email: userEmail },
+        notes:   { bookingId, userEmail },
+        theme:   { color: '#2563eb' },
         modal: {
           ondismiss: () => {
             setLoading(false);
@@ -122,13 +154,10 @@ export default function PaymentPage() {
       };
 
       const rzpInstance = new window.Razorpay(options);
-
-      // Razorpay fires this event when the payment fails inside the widget
       rzpInstance.on('payment.failed', (response) => {
         setLoading(false);
         setError(`Payment failed: ${response.error?.description || 'Unknown error'}. Please try again.`);
       });
-
       rzpInstance.open();
 
     } catch (err) {
@@ -163,6 +192,35 @@ export default function PaymentPage() {
             ))}
           </div>
 
+          {/* ── Promo Code Section ── */}
+          <div className="promo-section">
+            <div className="promo-label">🎟 Have a promo code?</div>
+            <div className="promo-input-row">
+              <input
+                className={`promo-input ${promoResult?.valid ? 'promo-valid' : promoError ? 'promo-invalid' : ''}`}
+                type="text"
+                placeholder="Enter promo code"
+                value={promoInput}
+                onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                maxLength={20}
+                disabled={loading}
+              />
+              {promoInput && (
+                <button className="promo-clear-btn" onClick={clearPromo} disabled={loading}>✕</button>
+              )}
+              {promoLoading && <span className="promo-spinner">⏳</span>}
+            </div>
+            {promoResult?.valid && (
+              <div className="promo-success-msg">
+                ✅ <strong>{promoResult.code}</strong> — {promoResult.description || 'Discount applied'}
+                &nbsp;· You save <strong>₹{promoResult.discountAmount.toLocaleString()}</strong>
+              </div>
+            )}
+            {promoError && !promoLoading && (
+              <div className="promo-error-msg">⚠ {promoError}</div>
+            )}
+          </div>
+
           {!rzpReady && !error && (
             <p style={{ textAlign: 'center', color: 'var(--gray-500)', fontSize: '13px', marginBottom: '12px' }}>
               ⏳ Loading payment gateway…
@@ -178,7 +236,7 @@ export default function PaymentPage() {
             onClick={handlePay}
             disabled={loading || !rzpReady}
           >
-            {loading ? 'Opening Razorpay…' : `Pay ₹${total.toLocaleString()} →`}
+            {loading ? 'Opening Razorpay…' : `Pay ₹${finalTotal.toLocaleString()} →`}
           </button>
 
           <p className="secure-note">🔒 Powered by Razorpay · 256-bit SSL · PCI-DSS compliant</p>
@@ -188,10 +246,22 @@ export default function PaymentPage() {
         <div>
           <div className="card fare-summary-card">
             <h3>Fare Summary</h3>
-            <div className="fare-line"><span>Base Fare</span><span>₹{amount.toLocaleString()}</span></div>
+            <div className="fare-line"><span>Base Fare</span><span>₹{baseFare.toLocaleString()}</span></div>
             <div className="fare-line"><span>GST (18%)</span><span>₹{taxes.toLocaleString()}</span></div>
             <div className="fare-line"><span>Convenience Fee</span><span className="fare-free">FREE</span></div>
-            <div className="fare-line total"><span>Total</span><span>₹{total.toLocaleString()}</span></div>
+            {promoResult?.valid && (
+              <div className="fare-line fare-discount">
+                <span>Promo ({promoResult.code})</span>
+                <span>− ₹{discountAmt.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="fare-line total">
+              <span>Total</span>
+              <span>₹{finalTotal.toLocaleString()}</span>
+            </div>
+            {promoResult?.valid && (
+              <div className="fare-savings-badge">🎉 You're saving ₹{discountAmt.toLocaleString()} on this booking!</div>
+            )}
             <div className="booking-ref-box">
               <span className="booking-ref-label">Booking ID</span>
               <span className="booking-ref-value">#{bookingId}</span>

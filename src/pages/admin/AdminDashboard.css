@@ -22,3 +22,81 @@
 .toggle-deactivate:hover { background: var(--rose); color: #fff; }
 
 .admin-form { display: flex; flex-direction: column; gap: 24px; }
+
+/* ── Promo Code styles ──────────────────────────────────────────────────── */
+.promo-code-chip {
+  font-family: monospace;
+  font-size: 14px;
+  color: #7c3aed;
+  background: #ede9fe;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+
+.promo-desc-small {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.badge-info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge-warning {
+  background: #fef9c3;
+  color: #b45309;
+}
+
+.form-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  color: #111827;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+select:focus { border-color: #2563eb; }
+
+/* Promo preview card */
+.promo-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f5f3ff;
+  border: 1.5px dashed #a78bfa;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.promo-preview-chip {
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #7c3aed;
+  background: #ede9fe;
+  padding: 6px 14px;
+  border-radius: 8px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.promo-preview-desc {
+  font-size: 13px;
+  color: #4c1d95;
+  line-height: 1.5;
+}

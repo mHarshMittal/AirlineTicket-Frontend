@@ -55,3 +55,94 @@
 .info-item-list { display: flex; flex-direction: column; gap: 8px; }
 .info-item-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--gray-500); }
 .info-dot { width: 6px; height: 6px; background: var(--blue); border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+
+/* ── Promo Code Section ─────────────────────────────────────────────────── */
+.promo-section {
+  margin: 20px 0 16px;
+  padding: 16px;
+  background: #f8faff;
+  border: 1.5px dashed #bfdbfe;
+  border-radius: 10px;
+}
+
+.promo-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700, #374151);
+  margin-bottom: 10px;
+}
+
+.promo-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.promo-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+
+.promo-input:focus { border-color: #2563eb; }
+.promo-input.promo-valid  { border-color: #059669; background: #f0fdf4; color: #065f46; }
+.promo-input.promo-invalid { border-color: #dc2626; background: #fef2f2; }
+
+.promo-clear-btn {
+  background: #e5e7eb;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: background 0.15s;
+}
+.promo-clear-btn:hover { background: #d1d5db; }
+
+.promo-spinner { font-size: 16px; }
+
+.promo-success-msg {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #065f46;
+  background: #d1fae5;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.promo-error-msg {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #991b1b;
+  background: #fee2e2;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+/* ── Fare summary discount line ─────────────────────────────────────────── */
+.fare-discount {
+  color: #059669 !important;
+  font-weight: 600;
+}
+.fare-discount span:last-child { color: #059669 !important; font-weight: 700; }
+
+.fare-savings-badge {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #065f46;
+  background: #d1fae5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0 4px;
+}
